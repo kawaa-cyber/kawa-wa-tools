@@ -1,40 +1,427 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🔥 KAWA CYBER TOOLS - WhatsApp Edition
-Version: 2.0 - REAL VERSION
-Platform: Termux
-Python: 3.8+
+🔥 KAWA CYBER - WHATSAPP API TOOL
+Version: 3.0 - READY TO USE
 Author: KAWA CYBER
 """
 
 import os
 import sys
 import time
-import random
-import requests
 import json
-import base64
-import hashlib
-import urllib.parse
+import requests
 from datetime import datetime
-import threading
 from colorama import init, Fore, Style
 
 init(autoreset=True)
 
-# ==================== KONFIGURASI WARNA ====================
-class Colors:
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    MAGENTA = '\033[95m'
-    CYAN = '\033[96m'
-    WHITE = '\033[97m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
+# ==================== KONFIGURASI AWAL ====================
+# ⚠️  GANTI INI DENGAN DATA KAMU!
+PHONE_ID = ""  # Isi dengan Phone Number ID-mu
+TOKEN = ""     # Isi dengan Access Token-mu
 
+# Jangan ganti yang ini
+VERSION = "v18.0"
+BASE_URL = f"https://graph.facebook.com/{VERSION}/{PHONE_ID}/messages"
+HEADERS = {
+    "Authorization": f"Bearer {TOKEN}",
+    "Content-Type": "application/json"
+}
+
+# ==================== FUNGSI UTAMA ====================
+class WhatsAppAPI:
+    def __init__(self, phone_id, token):
+        self.phone_id = phone_id
+        self.token = token
+        self.base_url = f"https://graph.facebook.com/v18.0/{phone_id}/messages"
+        self.headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        self.session = requests.Session()
+        
+    def send_text(self, to_number, message):
+        """Kirim pesan teks biasa"""
+        data = {
+            "messaging_product": "whatsapp",
+            "to": to_number,
+            "type": "text",
+            "text": {"body": message}
+        }
+        
+        try:
+            response = self.session.post(
+                self.base_url,
+                headers=self.headers,
+                json=data,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    "success": True,
+                    "message_id": result['messages'][0]['id'],
+                    "data": result
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": response.text,
+                    "code": response.status_code
+                }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def send_template(self, to_number, template_name, language="id"):
+        """Kirim template message"""
+        data = {
+            "messaging_product": "whatsapp",
+            "to": to_number,
+            "type": "template",
+            "template": {
+                "name": template_name,
+                "language": {"code": language}
+            }
+        }
+        
+        try:
+            response = self.session.post(
+                self.base_url,
+                headers=self.headers,
+                json=data
+            )
+            return response.status_code == 200
+        except:
+            return False
+    
+    def send_image(self, to_number, image_url, caption=""):
+        """Kirim gambar"""
+        data = {
+            "messaging_product": "whatsapp",
+            "to": to_number,
+            "type": "image",
+            "image": {
+                "link": image_url,
+                "caption": caption
+            }
+        }
+        
+        try:
+            response = self.session.post(
+                self.base_url,
+                headers=self.headers,
+                json=data
+            )
+            return response.status_code == 200
+        except:
+            return False
+    
+    def send_document(self, to_number, doc_url, filename):
+        """Kirim dokumen"""
+        data = {
+            "messaging_product": "whatsapp",
+            "to": to_number,
+            "type": "document",
+            "document": {
+                "link": doc_url,
+                "filename": filename
+            }
+        }
+        
+        try:
+            response = self.session.post(
+                self.base_url,
+                headers=self.headers,
+                json=data
+            )
+            return response.status_code == 200
+        except:
+            return False
+    
+    def send_audio(self, to_number, audio_url):
+        """Kirim audio"""
+        data = {
+            "messaging_product": "whatsapp",
+            "to": to_number,
+            "type": "audio",
+            "audio": {"link": audio_url}
+        }
+        
+        try:
+            response = self.session.post(
+                self.base_url,
+                headers=self.headers,
+                json=data
+            )
+            return response.status_code == 200
+        except:
+            return False
+    
+    def send_location(self, to_number, lat, long, name="", address=""):
+        """Kirim lokasi"""
+        data = {
+            "messaging_product": "whatsapp",
+            "to": to_number,
+            "type": "location",
+            "location": {
+                "latitude": lat,
+                "longitude": long,
+                "name": name,
+                "address": address
+            }
+        }
+        
+        try:
+            response = self.session.post(
+                self.base_url,
+                headers=self.headers,
+                json=data
+            )
+            return response.status_code == 200
+        except:
+            return False
+    
+    def send_contact(self, to_number, name, phone):
+        """Kirim kontak"""
+        data = {
+            "messaging_product": "whatsapp",
+            "to": to_number,
+            "type": "contacts",
+            "contacts": [
+                {
+                    "name": {"formatted_name": name},
+                    "phones": [{"phone": phone, "type": "CELL"}]
+                }
+            ]
+        }
+        
+        try:
+            response = self.session.post(
+                self.base_url,
+                headers=self.headers,
+                json=data
+            )
+            return response.status_code == 200
+        except:
+            return False
+    
+    def check_phone(self, phone_number):
+        """Cek nomor terdaftar atau tidak"""
+        if not phone_number.startswith('62'):
+            phone_number = '62' + phone_number.lstrip('0')
+        
+        url = f"https://graph.facebook.com/v18.0/{phone_number}"
+        params = {"access_token": self.token}
+        
+        try:
+            response = self.session.get(url, params=params)
+            return response.status_code == 200
+        except:
+            return False
+
+# ==================== MENU ====================
+def clear_screen():
+    os.system('clear' if os.name == 'posix' else 'cls')
+
+def print_banner():
+    banner = f"""
+{Fore.CYAN}╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║     🔥 KAWA CYBER - WHATSAPP API TOOL v3.0                   ║
+║             READY TO USE - TINGGAL PAKAI                     ║
+║                                                               ║
+╠═══════════════════════════════════════════════════════════════╣
+║  {Fore.GREEN}⚠️  BUTUH TOKEN & PHONE ID DARI META{Fore.CYAN}                      ║
+║  {Fore.YELLOW}📱 Telegram: @kawacyber{Fore.CYAN}                                 ║
+╚═══════════════════════════════════════════════════════════════╝{Fore.RESET}
+"""
+    print(banner)
+
+def main():
+    clear_screen()
+    print_banner()
+    
+    # Cek konfigurasi
+    global PHONE_ID, TOKEN, BASE_URL, HEADERS
+    
+    if not PHONE_ID or not TOKEN:
+        print(f"{Fore.YELLOW}⚠️  Konfigurasi belum diisi!{Fore.RESET}")
+        print(f"\n{Fore.CYAN}Silakan masukkan data Anda:{Fore.RESET}")
+        
+        PHONE_ID = input("Phone Number ID: ").strip()
+        TOKEN = input("Access Token: ").strip()
+        
+        # Update konfigurasi
+        BASE_URL = f"https://graph.facebook.com/v18.0/{PHONE_ID}/messages"
+        HEADERS = {
+            "Authorization": f"Bearer {TOKEN}",
+            "Content-Type": "application/json"
+        }
+        
+        # Simpan ke file (opsional)
+        save = input(f"\n{Fore.YELLOW}Simpan konfigurasi? (y/n): {Fore.RESET}")
+        if save.lower() == 'y':
+            with open('config.json', 'w') as f:
+                json.dump({"phone_id": PHONE_ID, "token": TOKEN}, f)
+            print(f"{Fore.GREEN}✓ Konfigurasi tersimpan!{Fore.RESET}")
+    
+    # Inisialisasi API
+    wa = WhatsAppAPI(PHONE_ID, TOKEN)
+    
+    while True:
+        clear_screen()
+        print_banner()
+        
+        menu = f"""
+{Fore.CYAN}╔═══════════════════════════════════════════════════════════════╗
+║                         MENU UTAMA                              ║
+╠═══════════════════════════════════════════════════════════════╣
+║  {Fore.GREEN}[1]{Fore.WHITE} 📱 Kirim Pesan Teks        {Fore.GREEN}[6]{Fore.WHITE} 📍 Kirim Lokasi       ║
+║  {Fore.GREEN}[2]{Fore.WHITE} 🖼️  Kirim Gambar           {Fore.GREEN}[7]{Fore.WHITE} 📇 Kirim Kontak       ║
+║  {Fore.GREEN}[3]{Fore.WHITE} 📄 Kirim Dokumen           {Fore.GREEN}[8]{Fore.WHITE} 🔍 Cek Nomor         ║
+║  {Fore.GREEN}[4]{Fore.WHITE} 🎵 Kirim Audio             {Fore.GREEN}[9]{Fore.WHITE} ⚙️  Ganti Konfig     ║
+║  {Fore.GREEN}[5]{Fore.WHITE} 📨 Kirim Template          {Fore.GREEN}[0]{Fore.WHITE} 🚪 Keluar           ║
+╚═══════════════════════════════════════════════════════════════╝{Fore.RESET}
+"""
+        print(menu)
+        
+        choice = input(f"{Fore.YELLOW}Pilih menu [0-9]: {Fore.RESET}")
+        
+        if choice == '1':
+            # Kirim teks
+            to = input("Nomor tujuan (ex: 628123456789): ")
+            msg = input("Pesan: ")
+            
+            print(f"\n{Fore.YELLOW}Mengirim...{Fore.RESET}")
+            result = wa.send_text(to, msg)
+            
+            if result['success']:
+                print(f"{Fore.GREEN}✓ Berhasil! Message ID: {result['message_id']}{Fore.RESET}")
+            else:
+                print(f"{Fore.RED}✗ Gagal: {result.get('error', 'Unknown error')}{Fore.RESET}")
+        
+        elif choice == '2':
+            # Kirim gambar
+            to = input("Nomor tujuan: ")
+            url = input("URL gambar: ")
+            caption = input("Caption (enter untuk skip): ")
+            
+            if wa.send_image(to, url, caption):
+                print(f"{Fore.GREEN}✓ Gambar terkirim!{Fore.RESET}")
+            else:
+                print(f"{Fore.RED}✗ Gagal!{Fore.RESET}")
+        
+        elif choice == '3':
+            # Kirim dokumen
+            to = input("Nomor tujuan: ")
+            url = input("URL dokumen: ")
+            filename = input("Nama file: ")
+            
+            if wa.send_document(to, url, filename):
+                print(f"{Fore.GREEN}✓ Dokumen terkirim!{Fore.RESET}")
+            else:
+                print(f"{Fore.RED}✗ Gagal!{Fore.RESET}")
+        
+        elif choice == '4':
+            # Kirim audio
+            to = input("Nomor tujuan: ")
+            url = input("URL audio: ")
+            
+            if wa.send_audio(to, url):
+                print(f"{Fore.GREEN}✓ Audio terkirim!{Fore.RESET}")
+            else:
+                print(f"{Fore.RED}✗ Gagal!{Fore.RESET}")
+        
+        elif choice == '5':
+            # Kirim template
+            to = input("Nomor tujuan: ")
+            template = input("Nama template: ")
+            
+            if wa.send_template(to, template):
+                print(f"{Fore.GREEN}✓ Template terkirim!{Fore.RESET}")
+            else:
+                print(f"{Fore.RED}✗ Gagal! Pastikan template sudah disetujui{Fore.RESET}")
+        
+        elif choice == '6':
+            # Kirim lokasi
+            to = input("Nomor tujuan: ")
+            lat = float(input("Latitude: "))
+            lng = float(input("Longitude: "))
+            name = input("Nama tempat: ")
+            addr = input("Alamat: ")
+            
+            if wa.send_location(to, lat, lng, name, addr):
+                print(f"{Fore.GREEN}✓ Lokasi terkirim!{Fore.RESET}")
+            else:
+                print(f"{Fore.RED}✗ Gagal!{Fore.RESET}")
+        
+        elif choice == '7':
+            # Kirim kontak
+            to = input("Nomor tujuan: ")
+            name = input("Nama kontak: ")
+            phone = input("Nomor kontak: ")
+            
+            if wa.send_contact(to, name, phone):
+                print(f"{Fore.GREEN}✓ Kontak terkirim!{Fore.RESET}")
+            else:
+                print(f"{Fore.RED}✗ Gagal!{Fore.RESET}")
+        
+        elif choice == '8':
+            # Cek nomor
+            phone = input("Nomor yang dicek: ")
+            
+            if wa.check_phone(phone):
+                print(f"{Fore.GREEN}✓ Nomor terdaftar di WhatsApp!{Fore.RESET}")
+            else:
+                print(f"{Fore.YELLOW}⚠️  Nomor tidak terdaftar atau error{Fore.RESET}")
+        
+        elif choice == '9':
+            # Ganti konfigurasi
+            PHONE_ID = input("Phone Number ID baru: ").strip()
+            TOKEN = input("Access Token baru: ").strip()
+            
+            # Update
+            BASE_URL = f"https://graph.facebook.com/v18.0/{PHONE_ID}/messages"
+            HEADERS = {
+                "Authorization": f"Bearer {TOKEN}",
+                "Content-Type": "application/json"
+            }
+            wa = WhatsAppAPI(PHONE_ID, TOKEN)
+            
+            print(f"{Fore.GREEN}✓ Konfigurasi diupdate!{Fore.RESET}")
+        
+        elif choice == '0':
+            print(f"\n{Fore.GREEN}Terima kasih telah menggunakan KAWA CYBER TOOLS!{Fore.RESET}")
+            sys.exit(0)
+        
+        input(f"\n{Fore.CYAN}Tekan Enter untuk lanjut...{Fore.RESET}")
+
+# ==================== AUTO-SETUP ====================
+def first_run():
+    """Jalan pertama kali"""
+    if os.path.exists('config.json'):
+        try:
+            with open('config.json', 'r') as f:
+                config = json.load(f)
+                global PHONE_ID, TOKEN
+                PHONE_ID = config.get('phone_id', '')
+                TOKEN = config.get('token', '')
+        except:
+            pass
+
+if __name__ == "__main__":
+    try:
+        first_run()
+        main()
+    except KeyboardInterrupt:
+        print(f"\n{Fore.YELLOW}Exiting...{Fore.RESET}")
+        sys.exit(0)
+    except Exception as e:
+        print(f"{Fore.RED}Error: {e}{Fore.RESET}")
+        time.sleep(2)
+        main()
 # ==================== BANNER ====================
 BANNER = f"""
 {Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════╗
